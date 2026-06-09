@@ -1,0 +1,45 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: jzfitness_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-jzfitness}
+      MYSQL_USER: ${DB_USERNAME:-jzfitness}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - jzfitness-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u${DB_USERNAME:-jzfitness}", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jzfitness_app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    env_file: .env
+    networks:
+      - jzfitness-net
+      - xcursoria-proxy
+    expose:
+      - "8080"
+
+volumes:
+  mysql_data:
+
+networks:
+  jzfitness-net:
+    driver: bridge
+  xcursoria-proxy:
+    external: true
+    name: server_xcursoria-net
