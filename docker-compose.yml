@@ -28,9 +28,8 @@ services:
     env_file: .env
     networks:
       - jzfitness-net
-      - xcursoria-proxy
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"
 
 volumes:
   mysql_data:
@@ -38,6 +37,3 @@ volumes:
 networks:
   jzfitness-net:
     driver: bridge
-  xcursoria-proxy:
-    external: true
-    name: server_xcursoria-net
