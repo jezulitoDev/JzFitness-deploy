@@ -3,6 +3,7 @@ name: Publish Docker image
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -25,8 +26,3 @@ jobs:
           context: .
           push: true
           tags: ghcr.io/jezulitodev/jzfitness:latest
-
-      - name: Make GHCR package public
-        run: gh api --method PATCH /user/packages/container/jzfitness -f visibility=public
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
