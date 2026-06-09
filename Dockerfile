@@ -1,16 +1,22 @@
-FROM node:24-alpine AS frontend
-WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm ci
-COPY vite.config.ts tsconfig.json eslint.config.js components.json ./
-COPY resources ./resources
-COPY public ./public
-RUN npm run build
-
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+
+FROM php:8.4-cli-bookworm AS frontend
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY --from=vendor /app/vendor ./vendor
+COPY package.json package-lock.json vite.config.ts tsconfig.json eslint.config.js components.json ./
+COPY resources ./resources
+COPY public ./public
+COPY app ./app
+COPY bootstrap ./bootstrap
+COPY config ./config
+COPY routes ./routes
+COPY artisan ./
+RUN npm ci && npm run build
 
 FROM php:8.4-fpm-bookworm
 WORKDIR /var/www/html
