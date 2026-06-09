@@ -1,22 +1,30 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction \
+    && composer dump-autoload --optimize --no-interaction
 
-FROM php:8.4-cli-bookworm AS frontend
+FROM node:22-bookworm AS frontend
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends nodejs npm \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    php-cli php-mbstring php-xml php-curl php-zip php-tokenizer php-dom php-sqlite3 \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=vendor /app/vendor ./vendor
+COPY composer.json composer.lock ./
 COPY package.json package-lock.json vite.config.ts tsconfig.json eslint.config.js components.json ./
+COPY database ./database
 COPY resources ./resources
 COPY public ./public
 COPY app ./app
 COPY bootstrap ./bootstrap
 COPY config ./config
 COPY routes ./routes
+COPY storage ./storage
 COPY artisan ./
-RUN npm ci && npm run build
+RUN printf 'APP_NAME=JzFitness\nAPP_ENV=local\nAPP_KEY=base64:%s\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\n' \
+    "$(openssl rand -base64 32)" > .env \
+    && php artisan wayfinder:generate --with-form --no-interaction \
+    && npm ci && npm run build
 
 FROM php:8.4-fpm-bookworm
 WORKDIR /var/www/html
