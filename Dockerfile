@@ -12,7 +12,7 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-FROM php:8.5-fpm-bookworm
+FROM php:8.4-fpm-bookworm
 WORKDIR /var/www/html
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -33,7 +33,9 @@ RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cac
     && chown -R www-data:www-data storage bootstrap/cache
 
 COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
 EXPOSE 8080
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+CMD ["/usr/local/bin/entrypoint.sh"]
