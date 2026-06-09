@@ -19,9 +19,7 @@ services:
       retries: 10
 
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/jezulitodev/jzfitness:latest
     container_name: jzfitness_app
     restart: unless-stopped
     depends_on:
