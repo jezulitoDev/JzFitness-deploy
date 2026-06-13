@@ -1,13 +1,15 @@
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction \
-    && composer dump-autoload --optimize --no-interaction
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-FROM node:22-bookworm AS frontend
+FROM php:8.4-cli-bookworm AS frontend
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    php-cli php-mbstring php-xml php-curl php-zip php-tokenizer php-dom php-sqlite3 \
+        ca-certificates curl gnupg git unzip libonig-dev \
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+    && apt-get install -y --no-install-recommends nodejs \
+    && docker-php-ext-install mbstring pdo_sqlite \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=vendor /app/vendor ./vendor
 COPY composer.json composer.lock ./
@@ -21,8 +23,9 @@ COPY config ./config
 COPY routes ./routes
 COPY storage ./storage
 COPY artisan ./
-RUN printf 'APP_NAME=JzFitness\nAPP_ENV=local\nAPP_KEY=base64:%s\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\n' \
-    "$(openssl rand -base64 32)" > .env \
+RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache storage/logs \
+    && printf 'APP_NAME=JzFitness\nAPP_ENV=local\nAPP_KEY=base64:%s\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\n' \
+        "$(openssl rand -base64 32)" > .env \
     && php artisan wayfinder:generate --with-form --no-interaction \
     && npm ci && npm run build
 
@@ -43,7 +46,7 @@ COPY --from=vendor /app/vendor ./vendor
 COPY . .
 COPY --from=frontend /app/public/build ./public/build
 
-RUN mkdir -p storage/framework/{sessions,views,cache} storage/logs bootstrap/cache \
+RUN mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
 
 COPY docker/supervisor/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
