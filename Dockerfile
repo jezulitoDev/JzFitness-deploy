@@ -29,7 +29,7 @@ RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views 
     && printf 'APP_NAME=JzFitness\nAPP_ENV=local\nAPP_KEY=base64:%s\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\n' \
         "$(openssl rand -base64 32)" > .env
 RUN php artisan wayfinder:generate --with-form --no-interaction
-RUN npm ci
+RUN rm -f .npmrc && npm install --no-audit --no-fund
 RUN npm run build
 
 FROM php:8.4-fpm-bookworm
