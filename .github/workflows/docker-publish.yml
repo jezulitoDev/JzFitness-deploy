@@ -21,8 +21,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: ghcr.io/jezulitodev/jzfitness:latest
+      - name: Build image (capture log)
+        id: build
+        run: |
+          set -o pipefail
+          docker build --progress=plain -t ghcr.io/jezulitodev/jzfitness:latest . 2>&1 | tee /tmp/build.log
+
+      - name: Publish build log to job summary
+        if: always()
+        run: |
+          {
+            echo '### Docker build log (tail)';
+            echo '```';
+            tail -n 250 /tmp/build.log;
+            echo '```';
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Push image
+        if: success()
+        run: docker push ghcr.io/jezulitodev/jzfitness:latest
