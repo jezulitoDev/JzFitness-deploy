@@ -27,9 +27,10 @@ COPY storage ./storage
 COPY artisan ./
 RUN mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache storage/logs \
     && printf 'APP_NAME=JzFitness\nAPP_ENV=local\nAPP_KEY=base64:%s\nAPP_DEBUG=true\nDB_CONNECTION=sqlite\nDB_DATABASE=:memory:\n' \
-        "$(openssl rand -base64 32)" > .env \
-    && php artisan wayfinder:generate --with-form --no-interaction \
-    && npm ci && npm run build
+        "$(openssl rand -base64 32)" > .env
+RUN php artisan wayfinder:generate --with-form --no-interaction
+RUN npm ci
+RUN npm run build
 
 FROM php:8.4-fpm-bookworm
 WORKDIR /var/www/html
