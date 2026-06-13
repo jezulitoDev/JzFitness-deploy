@@ -5,12 +5,14 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 
 FROM php:8.4-cli-bookworm AS frontend
 WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        ca-certificates curl gnupg git unzip libonig-dev \
-    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && docker-php-ext-install mbstring pdo_sqlite \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends ca-certificates curl gnupg git unzip libonig-dev; \
+    docker-php-ext-install mbstring; \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -; \
+    apt-get install -y --no-install-recommends nodejs; \
+    node --version; npm --version; php --version; \
+    apt-get clean; rm -rf /var/lib/apt/lists/*
 COPY --from=vendor /app/vendor ./vendor
 COPY composer.json composer.lock ./
 COPY package.json package-lock.json vite.config.ts tsconfig.json eslint.config.js components.json ./
